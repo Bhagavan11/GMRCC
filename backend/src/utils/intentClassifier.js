@@ -1,46 +1,86 @@
-import fetch from 'node-fetch';
+// src/services/intentClassifier.js
 import dotenv from 'dotenv';
 dotenv.config();
-
-const HF_TOKEN = process.env.HF_TOKEN;
-
-// Candidate labels shown to the model
-const candidateLabels = [
-  'college info',
-  'faculty',
+// The valid categories for classification
+const VALID_CATEGORIES = [
+    'faculty', 
+    'college_info', 
+    'department_info', 
+    'college_events', 
+    'placement_overview',
+    'placement_record',
+    'hostel_info',
+    'payments_info',
+    'research',
+    'accreditation',
+    'ranking',
+    'examination_results',
+    'examination_timetables',
+    'college_notifications',
+    'academic_calendar',
+    'examination_regulations',
+    'old_question_papers',
+    'examination_evaluation',
+    'student_activities_overview',
+    'student_council',
+    'professional_bodies',
+    'student_clubs',
+    'nss_extension_activities',
+    'student_policy',
+    'student_incentives',
 ];
 
-// Mapping labels to your internal keys
-const labelMap = {
-  'college info': 'college_info',
-  'faculty': 'faculty_info',
-};
+/**
+ * Classifies a user's query into one of the predefined categories using an LLM.
+ * @param {string} query - The user's query.
+ * @returns {Promise<string>} The classified category or 'none' if no category fits.
+ */
+export async function classifyQueryWithLLM(query) {
+    const chatHistory = [{
+        role: 'user',
+        parts: [{
+            text: `Classify the following user query into one of the following categories: ${VALID_CATEGORIES.join(', ')}. If none of the categories fit, respond with 'none'.\n\nUser Query: "${query}"`
+        }]
+    }];
 
-export async function classifyIntent(userInput) {
-  const response = await fetch(
-    'https://api-inference.huggingface.co/models/facebook/bart-large-mnli',
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${HF_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: userInput,
-        parameters: { candidate_labels: candidateLabels },
-      }),
+    const payload = {
+        contents: chatHistory,
+        generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: 'OBJECT',
+                properties: {
+                    "category": { "type": "STRING" }
+                }
+            }
+        }
+    };
+    
+    // IMPORTANT: Make a direct fetch call to the Gemini API
+    const apiKey = process.env.GEMINI_API_KEY;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+    
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (jsonString) {
+            const parsedJson = JSON.parse(jsonString);
+            const classifiedCategory = parsedJson.category;
+
+            if (VALID_CATEGORIES.includes(classifiedCategory)) {
+                return classifiedCategory;
+            }
+        }
+    } catch (error) {
+        console.error('Error classifying query with LLM:', error);
     }
-  );
 
-  const result = await response.json();
-
-  if (result.error) throw new Error(result.error);
-
-  const topLabel = result.labels[0];
-  const score = result.scores[0];
-
-  // Map label to your system's internal intent name
-  const mappedIntent = labelMap[topLabel] || 'unknown';
-
-  return { label: mappedIntent, score };
+    return 'none'; // Fallback to a non-specific category
 }

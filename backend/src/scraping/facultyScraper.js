@@ -1,46 +1,58 @@
-// scraping/facultyScraper.js
+// src/scrapers/facultyScraper.js
 import axios from "axios";
 import * as cheerio from "cheerio";
-import https from "https";
+import { httpsAgent, cleanText } from "../utils/util.js"; // Corrected path to util.js
 
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+const COLLEGE_BASE_URL = 'https://gmrit.edu.in'; // Define here or pass as param
+
+export const allDepts = ['cse', 'ece', 'eee', 'civil', 'mech', 'it', 'aiml', 'aids', 'bsh', 'admin', 'hod'];
 
 export async function scrapeFaculty(dept = "admin") {
-  const url = `https://gmrit.edu.in/facultydirectory.php?dept=${dept}`;
-  const { data } = await axios.get(url, { httpsAgent });
-  const $ = cheerio.load(data);
+  const url = `${COLLEGE_BASE_URL}/facultydirectory.php?dept=${dept}`;
+  let data;
+  try {
+    const response = await axios.get(url, { httpsAgent });
+    data = response.data;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch faculty page for ${dept}: ${error.message}`);
+    return [];
+  }
 
+  const $ = cheerio.load(data);
   const faculty = [];
 
   const facultyProfiles = $(".faculty_profile_box").map((i, el) => {
     const name = $(el).find(".name_details h4").text().trim();
-    const desig1 = $(el).find(".name_details p").eq(0).text().replace(/\u00a0/g, " ").trim();
-    const desig2 = $(el).find(".name_details p").eq(1).text().replace(/\u00a0/g, " ").trim();
+    const desig1 = cleanText($(el).find(".name_details p").eq(0).text());
+    const desig2 = cleanText($(el).find(".name_details p").eq(1).text());
     const designation = `${desig1} ${desig2}`.trim();
 
-    const img = $(el).find(".photo img").attr("src")?.replace("~", "");
-    const imageUrl = img ? `https://gmrit.edu.in${img}` : "";
+    const img = $(el).find(".photo img").attr("src"); // Get raw src
+    // Use URL constructor for robust path resolution
+    const imageUrl = img ? new URL(img, COLLEGE_BASE_URL).href : "";
 
-    const profileLink = $(el).find(".more_details a").attr("href") || "";
-    const profileUrl = profileLink ? `https://gmrit.edu.in/${profileLink}` : "";
+    const profileLink = $(el).find(".more_details a").attr("href"); // Get raw href
+    // Use URL constructor for robust path resolution
+    const profileUrl = profileLink ? new URL(profileLink, COLLEGE_BASE_URL).href : "";
 
     return { name, designation, imageUrl, profileUrl, dept };
   }).get();
 
   for (const item of facultyProfiles) {
     let profileText = "";
+    const effectiveSourceUrl = item.profileUrl || url; // Determine the actual source for this document
 
     if (item.profileUrl) {
       try {
         const { data: profileHtml } = await axios.get(item.profileUrl, { httpsAgent });
         const $$ = cheerio.load(profileHtml);
-        profileText = $$.text().replace(/\s+/g, " ").trim(); // Flatten all text
+        profileText = cleanText($$('body').text()); // Or more specific selectors if available
       } catch (err) {
-        console.warn(`⚠️ Failed to fetch profile: ${item.profileUrl}`);
+        console.warn(`⚠️ Failed to fetch faculty profile: ${item.profileUrl}`);
       }
     }
 
-    const fullText = `
+    const fullContent = `
       Name: ${item.name}
       Designation: ${item.designation}
       Department: ${item.dept}
@@ -49,15 +61,19 @@ export async function scrapeFaculty(dept = "admin") {
       Details: ${profileText}
     `.trim();
 
+    // Storing as a document for LangChain
     faculty.push({
-      name: item.name,
-      designation: item.designation,
-      department: item.dept,
-      title: item.name,
-      category: `faculty_${item.dept}`,
-      content: fullText,
-      imageUrl: item.imageUrl,
-      profileUrl: item.profileUrl,
+      pageContent: fullContent,
+      metadata: {
+        title: item.name,
+        category: `faculty_${item.dept}`,
+        source: effectiveSourceUrl, // Use the resolved URL as the source
+        docType: 'faculty_profile',
+        name: item.name,
+        designation: item.designation,
+        department: item.dept,
+        imageUrl: item.imageUrl,
+      },
     });
   }
 

@@ -1,63 +1,124 @@
-// scraping/collegeInfoScraper.js
+// src/scrapers/collegeInfoScraper.js
 import axios from 'axios';
-import https from 'https';
 import * as cheerio from 'cheerio';
+import { httpsAgent, cleanText, extractTextFromSelector } from '../utils/util.js';
 
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
-
-function cleanText($, selector) {
-  return $(selector).map((i, el) => $(el).text().trim()).get().join(' ').replace(/\s+/g, ' ');
-}
+const COLLEGE_BASE_URL = 'https://gmrit.edu.in';
 
 export async function scrapeAboutPage() {
-  const { data } = await axios.get('https://gmrit.edu.in/about.php', { httpsAgent });
+  const url = `${COLLEGE_BASE_URL}/about.php`;
+  let data;
+  try {
+    const response = await axios.get(url, { httpsAgent });
+    data = response.data;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch about page: ${error.message}`);
+    return null;
+  }
   const $ = cheerio.load(data);
-  const aboutText = cleanText($, '.description.mx-2 p');
+  const aboutText = extractTextFromSelector($, '.description.mx-2 p');
 
   return {
-    title: 'About GMRIT',
-    content: aboutText,
-    category: 'college_info'
+    pageContent: aboutText,
+    metadata: {
+      title: 'About GMRIT',
+      category: 'college_info',
+      source: url,
+      docType: 'html_page'
+    }
   };
 }
 
 export async function scrapeAchievements() {
-  const { data } = await axios.get('https://gmrit.edu.in/newAbout.php', { httpsAgent });
+  const url = `${COLLEGE_BASE_URL}/newAbout.php`;
+  let data;
+  try {
+    const response = await axios.get(url, { httpsAgent });
+    data = response.data;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch achievements page: ${error.message}`);
+    return [];
+  }
   const $ = cheerio.load(data);
 
-  return [
-    {
-      title: 'Rankings',
-      content: $('h5:contains("Rankings")').next('p').text().trim(),
-      category: 'ranking'
-    },
-    {
-      title: 'Accreditations',
-      content: $('h5:contains("Accreditations")').next('p').text().trim(),
-      category: 'accreditation'
-    },
-    {
-      title: 'Placements',
-      content: $('h5:contains("Placements")').next('p').text().trim(),
-      category: 'placement'
-    }
-  ];
+  const achievements = [];
+
+  const rankingsText = cleanText($('h5:contains("Rankings")').next('p').text());
+  if (rankingsText) {
+    achievements.push({
+      pageContent: rankingsText,
+      metadata: {
+        title: 'GMRIT Rankings',
+        category: 'ranking',
+        source: url,
+        docType: 'html_section'
+      }
+    });
+  }
+
+  const accreditationsText = cleanText($('h5:contains("Accreditations")').next('p').text());
+  if (accreditationsText) {
+    achievements.push({
+      pageContent: accreditationsText,
+      metadata: {
+        title: 'GMRIT Accreditations',
+        category: 'accreditation',
+        source: url,
+        docType: 'html_section'
+      }
+    });
+  }
+
+  const placementsText = cleanText($('h5:contains("Placements")').next('p').text());
+  if (placementsText) {
+    achievements.push({
+      pageContent: placementsText,
+      metadata: {
+        title: 'GMRIT Placements Overview',
+        category: 'placement_overview',
+        source: url,
+        docType: 'html_section'
+      }
+    });
+  }
+
+  return achievements;
 }
 
 export async function scrapeResearchCell() {
-  const { data } = await axios.get('https://gmrit.edu.in/researchcell.php', { httpsAgent });
+  const url = `${COLLEGE_BASE_URL}/researchcell.php`;
+  let data;
+  try {
+    const response = await axios.get(url, { httpsAgent });
+    data = response.data;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch research cell page: ${error.message}`);
+    return null;
+  }
   const $ = cheerio.load(data);
-  const content = cleanText($, '.container');
+  const content = extractTextFromSelector($, '.container');
 
   return {
-    title: 'Research & Development Cell',
-    content,
-    category: 'research'
+    pageContent: content,
+    metadata: {
+      title: 'Research & Development Cell',
+      category: 'research',
+      source: url,
+      docType: 'html_page'
+    }
   };
 }
-export async function scrapePlacement() {
-  const url = 'https://gmrit.edu.in/nb_placements.php';
-  const { data } = await axios.get(url, { httpsAgent });
+
+export async function scrapePlacementData() { // Renamed to avoid confusion with placement overview
+  const url = `${COLLEGE_BASE_URL}/nb_placements.php`;
+  let data;
+  try {
+    const response = await axios.get(url, { httpsAgent });
+    data = response.data;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch placements data page: ${error.message}`);
+    return [];
+  }
   const $ = cheerio.load(data);
 
   const placements = [];
@@ -71,34 +132,70 @@ export async function scrapePlacement() {
     const date = cleanText(dateTd.text());
 
     if (title && link) {
-      placements.push({ title, link, date });
+      const fullLink = link.startsWith('http') ? link : `${COLLEGE_BASE_URL}/${link}`; // Ensure absolute URL
+      placements.push({
+        pageContent: `Placement Record: ${title} - Date: ${date}. Link: ${fullLink}`,
+        metadata: {
+          title: `Placement Record: ${title}`,
+          category: 'placement_record',
+          source: fullLink, // Source is the direct link if available
+          date: date,
+          docType: 'placement_record_entry'
+        }
+      });
     }
   });
 
-  return {
-    title: "Placement Info",
-    content: placements,
-    category: "placement",
-  };
+  console.log(`✅ Scraped ${placements.length} placement records.`);
+  return placements;
 }
+
 export async function scrapeDepartment(code) {
-  const { data } = await axios.get(`https://gmrit.edu.in/department.php?code=${code}`, { httpsAgent });
+  const url = `${COLLEGE_BASE_URL}/department.php?code=${code}`;
+  let data;
+  try {
+    const response = await axios.get(url, { httpsAgent });
+    data = response.data;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch department page for ${code}: ${error.message}`);
+    return null;
+  }
   const $ = cheerio.load(data);
-  const deptName = $('h1').first().text().trim();
-  const content = cleanText($, '.container');
+  const deptName = cleanText($('h1').first().text());
+  // Assuming '.container' holds the main department content. Adjust if needed.
+  const content = extractTextFromSelector($, '.container');
 
   return {
-    title: deptName,
-    content,
-    category: 'department'
+    pageContent: content,
+    metadata: {
+      title: deptName,
+      category: 'department_info',
+      source: url,
+      docType: 'html_page',
+      departmentCode: code
+    }
   };
 }
 
+// Consolidating function
 export async function scrapeCollegeInfo() {
-  const about = await scrapeAboutPage();
-  const achievements = await scrapeAchievements();
-  const research = await scrapeResearchCell();
-  const departments = await Promise.all(['cse', 'it', 'ece', 'eee', 'mech'].map(scrapeDepartment));
+  const documents = [];
 
-  return [about, ...achievements, research, ...departments];
+  const about = await scrapeAboutPage();
+  if (about) documents.push(about);
+
+  const achievements = await scrapeAchievements();
+  documents.push(...achievements);
+
+  const research = await scrapeResearchCell();
+  if (research) documents.push(research);
+
+  const placementsData = await scrapePlacementData(); // New function
+  documents.push(...placementsData);
+
+  const departments = await Promise.all(['cse', 'it', 'ece', 'eee', 'mech'].map(scrapeDepartment));
+  documents.push(...departments.filter(Boolean)); // Filter out nulls
+
+  console.log(`✅ Scraped general college info: ${documents.length} documents.`);
+  return documents;
 }
