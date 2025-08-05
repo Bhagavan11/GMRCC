@@ -1,5 +1,4 @@
 // src/controllers/userQueryController.js
-
 import express from 'express';
 import { ChromaClient } from 'chromadb';
 import { generateEmbedding } from '../clients/embeddingClient.js';
@@ -53,31 +52,32 @@ router.post('/query', async (req, res) => {
         console.log('Query embedded.');
 
         // 1. Classify the user's query using the new LLM classifier
+        // const classifiedCategory = await classifyQueryWithLLM(userQuery);
         const classifiedCategory = await classifyQueryWithLLM(userQuery);
-        
+        console.log(`Classified query into category: ${classifiedCategory}`);
         // 2. Build the whereFilter based on the classified category
-        let whereFilter = {};
-        if (classifiedCategory !== 'none') {
-            if (classifiedCategory === 'placement_overview' || classifiedCategory === 'placement_record') {
-                whereFilter = { category: { '$or': [{ 'category': 'placement_overview' }, { 'category': 'placement_record' }] } };
-            } else if (classifiedCategory.startsWith('faculty')) {
-                 whereFilter = { category: { '$like': 'faculty_%' } };
-            } else {
-                whereFilter = { category: classifiedCategory };
-            }
-            console.log(`Query classified into category: '${classifiedCategory}'.`);
-        } else {
-             console.log("Could not classify query. Performing broad search.");
-        }
+        let whereFilter = {category: classifiedCategory }; // Default to no category
+        // if (classifiedCategory !== 'none') {
+        //     if (classifiedCategory === 'placement_overview' || classifiedCategory === 'placement_record') {
+        //         whereFilter = { category: { '$or': [{ 'category': 'placement_overview' }, { 'category': 'placement_record' }] } };
+        //     } else if (classifiedCategory.startsWith('faculty')) {
+        //          whereFilter = { category: { '$like': 'faculty_%' } };
+        //     } else {
+        //         whereFilter = { category: classifiedCategory };
+        //     }
+        //     console.log(`Query classified into category: '${classifiedCategory}'.`);
+        // } else {
+        //      console.log("Could not classify query. Performing broad search.");
+        // }
         
         // 3. Retrieve relevant chunks from ChromaDB with the new filter
         const queryOptions = {
             queryEmbeddings: [queryEmbedding],
-            nResults: 5,
+            nResults: 20,
             include: ['documents', 'metadatas']
         };
         
-        if (Object.keys(whereFilter).length > 0) {
+        if (Object.keys(whereFilter).length > 0 && classifiedCategory !== 'none') {
             queryOptions.where = whereFilter;
         }
 

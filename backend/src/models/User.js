@@ -1,6 +1,6 @@
-import mongoose from "mongoose";    // ✅ Correct import
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({    // ✅ Correct schema definition
+const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
@@ -15,10 +15,11 @@ const userSchema = new mongoose.Schema({    // ✅ Correct schema definition
         type: String,
         required: true
     },
-  
-  
- 
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationToken: String,
 });
 
-// ✅ Export the model
 export const User = mongoose.model("User", userSchema);

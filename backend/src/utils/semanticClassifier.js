@@ -37,7 +37,7 @@ let embeddedDescriptions = null;
 /**
  * Initializes and embeds all category descriptions.
  */
-async function initializeEmbeddings() {
+export async function initializeEmbeddings() {
     if (!embeddedDescriptions) {
         console.log('Initializing category embeddings for semantic classification...');
         const categories = Object.keys(CATEGORY_DESCRIPTIONS);

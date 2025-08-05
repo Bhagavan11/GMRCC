@@ -23,7 +23,9 @@
     "cheerio": "^1.1.0",
     "chromadb": "^3.0.10",
     "compute-cosine-similarity": "^1.1.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "crypto-random-string": "^5.0.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "node-cron": "^4.2.1",
@@ -31,6 +33,7 @@
     "patch-package": "^8.0.0",
     "pdf-parse": "^1.1.1",
     "postinstall-postinstall": "^2.1.0",
+    "resend": "^4.7.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

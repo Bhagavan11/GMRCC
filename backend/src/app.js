@@ -3,17 +3,21 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import userQueryController from './controllers/userQueryController.js';
-
+import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 
 
-// import syncCollegeInfo from './scripts/syncCollegeInfo.js';
+
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",  // or your frontend dev port
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 app.get('/', (req, res) => {
   res.send('GMRIT Bot Backend Running ✅');

@@ -11,9 +11,9 @@ let embedderPipeline = null; // Will store the loaded model
  */
 export async function loadEmbeddingModelPipeline() {
     if (!embedderPipeline) {
-        console.log("Loading embedding model: Xenova/all-MiniLM-L12-v2...");
+  
         embedderPipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L12-v2');
-        console.log("Embedding model loaded successfully.");
+      
     }
     return embedderPipeline;
 }
