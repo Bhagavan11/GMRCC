@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174"],  // or your frontend dev port
+  origin: ["https://gmr-campus-connect-tkwg.vercel.app", "http://localhost:5174"],  // or your frontend dev port
   credentials: true
 }));
 app.use(express.json());
