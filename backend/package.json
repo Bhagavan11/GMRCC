@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "scrape": "node src/scraper.js",
-    "run-scheduler": "node src/index.js",
-    "postinstall": "patch-package"
-  },
+ "scripts": {
+  "start": "node src/app.js",
+  "dev": "nodemon src/app.js",
+  "scrape": "node src/scraper.js",
+  "run-scheduler": "node src/index.js",
+  "postinstall": "npm install --legacy-peer-deps"
+},
+
   "keywords": [],
   "author": "",
   "license": "ISC",
