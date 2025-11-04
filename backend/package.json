@@ -8,12 +8,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "scrape": "node src/scraper.js",
-    "run-scheduler": "node src/index.js",
-    "postinstall": "npm install --legacy-peer-deps"
-  },
+  "start": "node src/app.js",
+  "dev": "nodemon src/app.js",
+  "scrape": "node src/scraper.js",
+  "run-scheduler": "node src/index.js",
+  "build": "echo 'Nothing to build, starting server...'",
+  "postinstall": "npm install --legacy-peer-deps"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
