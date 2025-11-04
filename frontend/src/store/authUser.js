@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 
-const API_BASE_URL = "http://localhost:5000/api/auth";
+// const API_BASE_URL = "http://localhost:5000/api/auth";
+const API_BASE_URL = "https://gmrcc.onrender.com/api/auth";
 
 export const useAuthStore = create((set) => ({
     user: null,

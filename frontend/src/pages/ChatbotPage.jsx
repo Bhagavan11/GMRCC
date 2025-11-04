@@ -4,8 +4,9 @@ import ReactMarkdown from 'react-markdown';
 import { FiSend, FiMessageSquare, FiChevronRight, FiSun, FiMoon, FiTrash2, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled, { createGlobalStyle, keyframes, ThemeProvider } from 'styled-components';
-
+import digitalBotImage from '../assets/chatbot.png';
 // Theme context
+import { Viewer } from 'react-3d-viewer';
 const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
@@ -147,6 +148,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+
 const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -158,10 +160,108 @@ const ChatContainer = styled.div`
   position: relative;
   overflow: hidden;
   transition: background 0.3s ease;
+  position: relative;
+  z-index: 1;
   
   @media (min-width: 1200px) {
     max-width: 100%;
     margin: 0;
+  }
+`;
+
+const BotBackground = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .bot-image {
+    width: 50%;
+    max-width: 500px;
+    height: auto;
+    opacity: 0.15;
+    animation: float 6s ease-in-out infinite;
+    filter: 
+      drop-shadow(0 0 6px rgba(67, 97, 238, 0.6))
+      drop-shadow(0 0 12px rgba(67, 97, 238, 0.4))
+      brightness(1.2)
+      contrast(1.2);
+    transform: translateZ(0);
+    will-change: transform;
+    transition: transform 0.5s ease-in-out;
+    
+    &:hover {
+      transform: rotateY(180deg) translateZ(0);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .bot-image {
+      width: 80%;
+    }
+  }
+`;
+
+const BotIconContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 1rem;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.2s ease-out;
+  
+  &:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+  }
+
+  &:hover .bot-3d {
+    transform: scale(1.1) rotateX(${props => props.$rotateX}deg) rotateY(${props => props.$rotateY}deg);
+    filter: drop-shadow(0 0 8px rgba(67, 97, 238, 0.3));
+  }
+
+  .bot-3d {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.5);
+    will-change: transform, filter;
+    transform: rotateX(${props => props.$rotateX}deg) rotateY(${props => props.$rotateY}deg);
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      backface-visibility: hidden;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
   }
 `;
 
@@ -446,6 +546,14 @@ const TypingIndicator = styled.div`
 const ChatbotPage = () => {
   const [theme, setTheme] = useState('light');
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
   const [messages, setMessages] = useState([
     { 
       id: Date.now(),
@@ -461,7 +569,34 @@ const ChatbotPage = () => {
   const chatContainerRef = useRef(null);
   
   const currentTheme = theme === 'light' ? lightTheme : darkTheme;
-  
+  useEffect(() => {
+    const icon = document.getElementById("header-bot-icon");
+    if (!icon) return;
+
+    const handleMouseMove = (e) => {
+      const rect = icon.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // Reduced rotation sensitivity
+      const rotateY = ((e.clientX - centerX) / (rect.width / 2)) * 10;
+      const rotateX = ((centerY - e.clientY) / (rect.height / 2)) * 10;
+      
+      setRotation({ x: rotateX, y: rotateY });
+    };
+
+    const handleMouseLeave = () => {
+      setRotation({ x: 0, y: 0 }); // Reset rotation when mouse leaves
+    };
+
+    icon.addEventListener('mousemove', handleMouseMove);
+    icon.addEventListener('mouseleave', handleMouseLeave);
+    
+    return () => {
+      icon.removeEventListener('mousemove', handleMouseMove);
+      icon.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -490,7 +625,8 @@ const ChatbotPage = () => {
     ]);
   };
 
-  const API_BASE_URL = 'http://localhost:5000';
+  // const API_BASE_URL = 'http://localhost:5000';
+  const API_BASE_URL = 'https://gmrcc.onrender.com';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -579,7 +715,47 @@ const ChatbotPage = () => {
       <GlobalStyle />
       <ChatContainer ref={chatContainerRef} className={isFullscreen ? 'fullscreen' : ''}>
         <Header>
-          <h1><FiMessageSquare /> GMRCC Assistant</h1>
+          <h1><BotIconContainer
+    $rotateX={rotateX}
+    $rotateY={rotateY}
+    onMouseDown={(e) => {
+      e.preventDefault();
+      setIsDragging(true);
+      setStartX(e.clientX - rotateY);
+      setStartY(e.clientY - rotateX);
+    }}
+    onMouseMove={(e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const sensitivity = 0.5; // Reduce rotation speed
+      const x = (e.clientY - startY) * sensitivity;
+      const y = (e.clientX - startX) * sensitivity;
+      setRotateX(x);
+      setRotateY(y);
+    }}
+    onMouseUp={() => {
+      setIsDragging(false);
+      // Add a smooth transition when releasing the mouse
+      document.documentElement.style.cursor = '';
+    }}
+    onMouseLeave={() => {
+      setIsDragging(false);
+      document.documentElement.style.cursor = '';
+    }}
+  >
+    <div className="bot-3d">
+      <img
+        src={digitalBotImage}
+        alt="Bot"
+        style={{
+          filter: isHovering ? 'brightness(1.1) saturate(1.2)' : 'none',
+          transform: isHovering ? 'scale(1.05)' : 'scale(1)'
+        }}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      />
+    </div>
+  </BotIconContainer>GMRCC Assistant</h1>
           <div className="header-actions">
             <button onClick={toggleTheme} title="Toggle theme">
               {theme === 'light' ? <FiMoon /> : <FiSun />}
@@ -705,6 +881,7 @@ const ChatbotPage = () => {
             </button>
           </InputContainer>
         </div>
+   
       </ChatContainer>
     </ThemeProvider>
   );
