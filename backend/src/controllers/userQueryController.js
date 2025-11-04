@@ -179,9 +179,10 @@ router.post("/query", async (req, res) => {
         - List the document link(s) on separate lines and highlight this URL which directly navigates to the link when clicked.
         - Do not show PDF contents.
       5. If the answer is not in the provided content, reply exactly:
-        I do not have that information.go through the official website of GMRIT for more information.[https://gmrit.edu.in/]
+        I do not have that information.go through the official website of GMRIT for more information.
       6. Please provide hyperlinks for URLs in blue clickable links.
       7. No HTML tags should appear in responses.
+      
 
       Context:
       ${context}
