@@ -6,7 +6,7 @@ const VALID_CATEGORIES = [
     'academic_regulations',
     'accreditation',
     'college_events',
-    'college_info',
+    // 'college_info',
     'department_info',
     'department_info_aids',
     'department_info_aiml',
@@ -468,14 +468,14 @@ const VALID_CATEGORIES = [
 'Thermal Engineering_MTECH',
 
 
-
-'Professional Bodies_SAE',
-'Professional Bodies_CSI',
-'Professional Bodies_IICHE',
-'Professional Bodies_ACM',
-'Professional Bodies_ISTE',
-'Professional Bodies_IETE',
-'Professional Bodies_IEEE',
+"professional_body",
+// 'Professional Bodies_SAE',
+// 'Professional Bodies_CSI',
+// 'Professional Bodies_IICHE',
+// 'Professional Bodies_ACM',
+// 'Professional Bodies_ISTE',
+// 'Professional Bodies_IETE',
+// 'Professional Bodies_IEEE',
 
 
 'Student Club_FilimClub',
@@ -516,6 +516,8 @@ const VALID_CATEGORIES = [
 'Total_Placements_2025',
 'Total_Placements_2024',
 'Total_Placements_2023',
+
+'btech&mtechdepartment'
 
 
 

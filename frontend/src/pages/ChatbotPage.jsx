@@ -53,7 +53,7 @@ const sampleQuestions = {
   payCollegeFee: "How can I pay the college fee?",
   downloadOldQuestionPapers: "I want to download old question papers for exams.",
   semResultsLink: "Get me the link for checking semester results.",
-  departmentsAvailable: "What are the departments available in GMRIT?",
+  departmentsAvailable: "What are the departments available in  Btech GMRIT?",
   hodList: "List out the HODs of each department.",
   achievements: "Tell me some achievements of GMRIT.",
   gateRanks: "Did any students get a GATE rank from GMRIT?",
@@ -61,7 +61,7 @@ const sampleQuestions = {
   researchStatsMechanical: "Tell me research profile statistics of Mechanical Engineering.",
   researchStatsCSE: "Tell me research profile statistics of CSE.",
   totalPatents: "What is the total number of patents of the college?",
-  mtechCoursesCount: "How many M.Tech courses are offered by GMRIT?",
+  mtechCoursesCount: "what are the departments available in Gmrit of Mtech",
   MtechCSE: "Does GMRIT have M.Tech in CSE?",
   stemClub: "Get me the details of the STEM Club.",
   deansList: "List out the Deans of GMRIT.",
@@ -625,8 +625,8 @@ const ChatbotPage = () => {
     ]);
   };
 
-  // const API_BASE_URL = 'http://localhost:5000';
-  const API_BASE_URL = 'https://gmrcc.onrender.com';
+  const API_BASE_URL = 'http://localhost:5000';
+  // const API_BASE_URL = 'https://gmrcc.onrender.com';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
