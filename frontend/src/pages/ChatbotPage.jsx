@@ -625,8 +625,8 @@ const ChatbotPage = () => {
     ]);
   };
 
-  // const API_BASE_URL = 'http://localhost:5000';
-  const API_BASE_URL = 'https://gmrcc.onrender.com';
+  const API_BASE_URL = 'http://localhost:5000';
+  // const API_BASE_URL = 'https://gmrcc.onrender.com';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
